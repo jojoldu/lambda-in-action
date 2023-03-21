@@ -18,7 +18,7 @@ module.exports = {
   },
   ignorePatterns: ['.eslintrc.js'],
   rules: {
-    'no-console': 'error',
+    'no-console': 'off',
     'no-undef': 'off',
     'curly': 1,
     'arrow-body-style': ['error', 'as-needed'],

@@ -1,10 +1,7 @@
-// noinspection DuplicatedCode
-
 const https = require('https');
 const zlib = require('zlib');
 
-const SLOW_TIME_LIMIT = 3; // 3초이상일 경우 슬랙 발송
-const SLACK_URL = '슬랙 Webhook URL';
+const SLACK_URL = process.env.SLACK_URL;
 
 exports.handler = (input, context) => {
   const payload = Buffer.from(input.awslogs.data, 'base64');
@@ -13,72 +10,49 @@ exports.handler = (input, context) => {
       context.fail(e);
     }
 
-    const resultAscii = result.toString('ascii');
-
-    let resultJson;
-
-    try {
-      resultJson = JSON.parse(resultAscii);
-    } catch (e) {
-      console.error(
-        `[알람발송실패] JSON.parse(result.toString('ascii')) Fail, resultAscii= ${resultAscii}`,
-      );
-      context.fail(e);
-
-      return;
-    }
-
-    console.log(`result json = ${resultAscii}`);
-
-    for (let i = 0; i < resultJson.logEvents.length; i++) {
-      const logJson = new Message(
-        resultJson.logEvents[i],
-        resultJson.logStream,
-      );
-      console.log(`logJson=${JSON.stringify(logJson)}`);
-
-      try {
-        const message = slackMessage(logJson);
-
-        if (logJson.queryTime > SLOW_TIME_LIMIT) {
-          await send(message, SLACK_URL);
-        }
-      } catch (e) {
-        console.log(`slack message fail= ${JSON.stringify(logJson)}`);
-
-        return;
-      }
-    }
+    const resultJson = getQueryLog(result, context);
+    const messages = resultJson.logEvents.map(
+      (event) => new Message(event, resultJson.logStream),
+    );
+    Promise.all(
+      messages.map((message) => send(slackMessage(message), SLACK_URL)),
+    ).catch((error) => {
+      console.error('slack message fail:', error);
+    });
   });
 };
 
-const DATE_TIME_REGEX = new RegExp(
-  '(\\d{4})-(\\d{2})-(\\d{2}) (\\d{2}):(\\d{2}):(\\d{2}) UTC:',
-);
-
 /**
  *
- * @returns {[]}
- * @param message { string }
+ * @param buffer {Buffer}
+ * @param context
+ * @returns {any}
  */
-export function convertMessages(message) {
-  const removedUtcMessage = message.replace(
-    message.match(DATE_TIME_REGEX)[0],
-    '',
-  );
+function getQueryLog(buffer, context) {
+  const resultAscii = buffer.toString('ascii');
 
-  return removedUtcMessage.split(':');
+  console.log(`result json = ${resultAscii}`);
+
+  try {
+    return JSON.parse(resultAscii);
+  } catch (e) {
+    console.error(
+      `[ascii 변환 실패] JSON.parse(buffer.toString('ascii')) Fail, resultAscii= ${resultAscii}`,
+    );
+    context.fail(e);
+  }
 }
+
 export class Message {
   constructor(logEvent, logLocation) {
     const message = logEvent.message;
-    const messages = convertMessages(message);
+    const messages = this.parse(message);
     const timeSplit = messages.length > 6 ? messages[5].trim().split(' ') : [];
     const queryTime =
       timeSplit.length > 1 ? (Number(timeSplit[0]) / 1000).toFixed(3) : 0;
     const querySplit = message.split('<unnamed>:');
 
-    this.currentTime = toYyyymmddhhmmss(logEvent.timestamp);
+    this.currentTime = new KstTime(logEvent.timestamp).time;
     this.logLocation = logLocation;
     this.userIp = messages[0].trim();
     this.user = messages[1].trim();
@@ -86,38 +60,54 @@ export class Message {
     this.queryTime = queryTime;
     this.query = querySplit[querySplit.length - 1].trim();
   }
+
+  /** @returns {[]}
+   * @param message { string } */
+  parse(message) {
+    const DATE_TIME_REGEX = new RegExp(
+      '(\\d{4})-(\\d{2})-(\\d{2}) (\\d{2}):(\\d{2}):(\\d{2}) UTC:',
+    );
+    const removedUtcMessage = message.replace(
+      message.match(DATE_TIME_REGEX)[0],
+      '',
+    );
+
+    return removedUtcMessage.split(':');
+  }
+
+  /** @param user {string} */
+  getUser(user) {
+    return user.includes('@rallit') ? `${user} (랠릿)` : `${user} (인프런)`;
+  }
 }
 
-// 타임존 UTC -> KST
-export function toYyyymmddhhmmss(timestamp) {
-  if (!timestamp) {
-    return '';
+export class KstTime {
+  /**
+   * @param timestamp {number}
+   */
+  constructor(timestamp) {
+    const kstDate = new Date(timestamp + 32400000);
+    this.time = `${kstDate.getFullYear().toString()}-${this.pad(
+      kstDate.getMonth() + 1,
+    )}-${this.pad(kstDate.getDate())} ${this.pad(
+      kstDate.getHours(),
+    )}:${this.pad(kstDate.getMinutes())}:${this.pad(kstDate.getSeconds())}`;
   }
 
-  function pad2(n) {
+  pad(n) {
     return n < 10 ? '0' + n : n;
   }
-
-  const kstDate = new Date(timestamp + 32400000);
-
-  return (
-    kstDate.getFullYear().toString() +
-    '-' +
-    pad2(kstDate.getMonth() + 1) +
-    '-' +
-    pad2(kstDate.getDate()) +
-    ' ' +
-    pad2(kstDate.getHours()) +
-    ':' +
-    pad2(kstDate.getMinutes()) +
-    ':' +
-    pad2(kstDate.getSeconds())
-  );
 }
 
 export function slackMessage(messageJson) {
-  const title = `[${SLOW_TIME_LIMIT}초이상 실행된 쿼리]`;
-  const message = `언제: ${messageJson.currentTime}\n로그위치:${messageJson.logLocation}\n계정: ${messageJson.user}\n계정IP: ${messageJson.userIp}\npid: ${messageJson.pid}\nQueryTime: ${messageJson.queryTime}초\n쿼리: ${messageJson.query}`;
+  const title = `[DDL 쿼리]`;
+  const message = `언제: ${messageJson.currentTime}\n
+  로그위치:${messageJson.logLocation}\n
+  계정: ${messageJson.user}\n
+  계정IP: ${messageJson.userIp}\n
+  pid: ${messageJson.pid}\n
+  QueryTime: ${messageJson.queryTime}초\n
+  쿼리: ${messageJson.query}`;
 
   return {
     attachments: [
@@ -146,7 +136,12 @@ export async function send(message, slackUrl) {
     },
   };
 
-  return request(options, message);
+  try {
+    await request(options, message);
+  } catch (e) {
+    console.error(`[Slack 발송 실패] message=${message}`, e);
+    throw e;
+  }
 }
 
 export async function request(options, data) {

@@ -1,12 +1,12 @@
 const https = require('https');
 const zlib = require('zlib');
+
 const SLOW_TIME_LIMIT = 3; // 3초이상일 경우 슬랙 발송
 const SLACK_URL = '슬랙 Webhook URL';
 
 exports.handler = (input, context) => {
   const payload = Buffer.from(input.awslogs.data, 'base64');
-  zlib.gunzip(payload, async(e, result) => {
-
+  zlib.gunzip(payload, async (e, result) => {
     if (e) {
       context.fail(e);
     }
@@ -18,72 +18,86 @@ exports.handler = (input, context) => {
     try {
       resultJson = JSON.parse(resultAscii);
     } catch (e) {
-      console.log(`[알람발송실패] JSON.parse(result.toString('ascii')) Fail, resultAscii= ${resultAscii}`);
+      console.log(
+        `[알람발송실패] JSON.parse(result.toString('ascii')) Fail, resultAscii= ${resultAscii}`,
+      );
       context.fail(e);
+
       return;
     }
 
     console.log(`result json = ${resultAscii}`);
 
-    for(let i=0; i<resultJson.logEvents.length; i++) {
+    for (let i = 0; i < resultJson.logEvents.length; i++) {
       const logJson = toJson(resultJson.logEvents[i], resultJson.logStream);
       console.log(`logJson=${JSON.stringify(logJson)}`);
 
       try {
         const message = slackMessage(logJson);
 
-        if(logJson.queryTime > SLOW_TIME_LIMIT) {
+        if (logJson.queryTime > SLOW_TIME_LIMIT) {
           await exports.postSlack(message, SLACK_URL);
         }
       } catch (e) {
         console.log(`slack message fail= ${JSON.stringify(logJson)}`);
+
         return;
       }
-
     }
   });
 };
-
 
 function toJson(logEvent, logLocation) {
   const message = logEvent.message;
 
   const currentTime = toYyyymmddhhmmss(logEvent.timestamp);
-  const dateTimeRegex = new RegExp('(\\d{4})-(\\d{2})-(\\d{2}) (\\d{2}):(\\d{2}):(\\d{2}) UTC:');
+  const dateTimeRegex = new RegExp(
+    '(\\d{4})-(\\d{2})-(\\d{2}) (\\d{2}):(\\d{2}):(\\d{2}) UTC:',
+  );
   const matchArray = message.match(dateTimeRegex);
   const removedUtcMessage = message.replace(matchArray[0], '');
   const messages = removedUtcMessage.split(':');
-  const timeSplit = messages.length>6? messages[5].trim().split(' '): [];
-  const queryTime = timeSplit.length>1? (Number(timeSplit[0]) / 1000).toFixed(3): 0;
-  const querySplit = message.split('\<unnamed\>\:');
+  const timeSplit = messages.length > 6 ? messages[5].trim().split(' ') : [];
+  const queryTime =
+    timeSplit.length > 1 ? (Number(timeSplit[0]) / 1000).toFixed(3) : 0;
+  const querySplit = message.split('<unnamed>:');
 
   return {
-    "currentTime": currentTime,
-    "logLocation": logLocation,
-    "userIp": messages[0].trim(),
-    "user": messages[1].trim(),
-    "pid": messages[2].trim().replace('[', '').replace(']', ''),
-    "queryTime": queryTime,
-    "query": querySplit[querySplit.length-1].trim()
-  }
+    currentTime: currentTime,
+    logLocation: logLocation,
+    userIp: messages[0].trim(),
+    user: messages[1].trim(),
+    pid: messages[2].trim().replace('[', '').replace(']', ''),
+    queryTime: queryTime,
+    query: querySplit[querySplit.length - 1].trim(),
+  };
 }
 
 // 타임존 UTC -> KST
 function toYyyymmddhhmmss(timestamp) {
-
-  if(!timestamp){
+  if (!timestamp) {
     return '';
   }
 
-  function pad2(n) { return n < 10 ? '0' + n : n }
+  function pad2(n) {
+    return n < 10 ? '0' + n : n;
+  }
 
   const kstDate = new Date(timestamp + 32400000);
-  return kstDate.getFullYear().toString()
-    + '-'+ pad2(kstDate.getMonth() + 1)
-    + '-'+ pad2(kstDate.getDate())
-    + ' '+ pad2(kstDate.getHours())
-    + ':'+ pad2(kstDate.getMinutes())
-    + ':'+ pad2(kstDate.getSeconds());
+
+  return (
+    kstDate.getFullYear().toString() +
+    '-' +
+    pad2(kstDate.getMonth() + 1) +
+    '-' +
+    pad2(kstDate.getDate()) +
+    ' ' +
+    pad2(kstDate.getHours()) +
+    ':' +
+    pad2(kstDate.getMinutes()) +
+    ':' +
+    pad2(kstDate.getSeconds())
+  );
 }
 
 function slackMessage(messageJson) {
@@ -98,32 +112,31 @@ function slackMessage(messageJson) {
         fields: [
           {
             value: message,
-            short: false
-          }
-        ]
-      }
-    ]
+            short: false,
+          },
+        ],
+      },
+    ],
   };
 }
 
-exports.postSlack = async (message, slackUrl) => {
-  return request(exports.options(slackUrl), message);
-}
+exports.postSlack = async (message, slackUrl) =>
+  request(exports.options(slackUrl), message);
 
 exports.options = (slackUrl) => {
-  const {host, pathname} = new URL(slackUrl);
+  const { host, pathname } = new URL(slackUrl);
+
   return {
     hostname: host,
     path: pathname,
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
     },
   };
-}
+};
 
 function request(options, data) {
-
   return new Promise((resolve, reject) => {
     const req = https.request(options, (res) => {
       res.setEncoding('utf8');

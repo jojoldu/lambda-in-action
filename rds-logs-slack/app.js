@@ -1,7 +1,7 @@
 import https from 'https';
 import zlib from 'zlib';
 
-const webhooks = {
+const WEB_HOOKS = {
   DDL: process.env.DDL,
   SLOW: {
     inflearn: process.env.INFLEARN_SLOW,
@@ -13,22 +13,40 @@ const webhooks = {
   },
 };
 
-export const handler = async (event, context) => {
-  console.log('EVENT: \n' + JSON.stringify(event, null, 2));
+const SLOW_LIMIT = 3;
 
+export const handler = async (event, context) => {
   zlib.gunzip(Buffer.from(event.awslogs.data, 'base64'), async (e, result) => {
     if (e) {
       context.fail(e);
     }
 
     const { logEvents, logStream } = JSON.parse(result);
-    const messages = logEvents?.map((event) => new Message(event, logStream));
-    console.log(`MESSAGES: \n${JSON.stringify(messages)}`);
+    console.log(`logEvents count=${logEvents.length}`);
+
+    const messages = logEvents
+      ?.map((event) => new Message(event, logStream))
+      .filter((message) => message.isSendable);
+
+    console.log(`messages count=${messages.length}`);
+
+    await Promise.all(
+      messages.map(
+        async (message) => await send(slackMessage(message), message.webhook),
+      ),
+    ).catch((error) => {
+      console.error('slack message fail:', error);
+    });
   });
 };
 
+const SERVICE_TYPE = {
+  INFLEARN: 'INFLEARN',
+  RALLIT: 'RALLIT',
+};
 export class Message {
   constructor({ message, timestamp }, logStream) {
+    this._message = message;
     this.currentTime = new KstTime(timestamp).time;
     this.logLocation = logStream;
     this.userIp = message.match(/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/)[0];
@@ -42,18 +60,51 @@ export class Message {
     const match = message.match(/duration: \d+\.\d+ ms/);
 
     if (!match || match.length === 0) {
-      return '알 수 없음';
+      return 0;
     }
 
-    return `${(Number(match[0].match(/\d+\.\d+/)[0]) / 1000).toFixed(3)}초`;
+    return (Number(match[0].match(/\d+\.\d+/)[0]) / 1000).toFixed(3);
   }
 
   get service() {
-    return this.user.includes('@rallit') ? 'RALLIT' : 'INFLEARN';
+    return this.user.includes('@rallit')
+      ? SERVICE_TYPE.RALLIT
+      : SERVICE_TYPE.INFLEARN;
   }
 
   get type() {
-    return 'SLOW';
+    if (
+      this.query.includes('create table') ||
+      this.query.includes('drop table') ||
+      this.query.includes('alter table')
+    ) {
+      return 'DDL';
+    }
+
+    return this._message.match(/ERROR:\s+(?:.*:\s+)?(.+)/) ? 'ERROR' : 'SLOW';
+  }
+
+  get isSendable() {
+    if (this.query.includes('Query Text:')) {
+      return false;
+    }
+
+    return this.queryTime >= SLOW_LIMIT || this.type !== 'SLOW';
+  }
+  get webhook() {
+    if (this.type === 'DDL') {
+      return WEB_HOOKS.DDL;
+    }
+
+    if (this.type === 'ERROR') {
+      return this.service === SERVICE_TYPE.INFLEARN
+        ? WEB_HOOKS.ERROR.inflearn
+        : WEB_HOOKS.ERROR.rallit;
+    }
+
+    return this.service === SERVICE_TYPE.INFLEARN
+      ? WEB_HOOKS.SLOW.inflearn
+      : WEB_HOOKS.SLOW.rallit;
   }
 }
 
@@ -84,7 +135,7 @@ export function slackMessage(message) {
   User: ${message.user}\n
   UserIP: ${message.userIp}\n
   pid: ${message.pid}\n
-  QueryTime: ${message.queryTime}\n
+  QueryTime: ${message.queryTime} 초\n
   Query: ${message.query}`;
 
   return {
@@ -103,8 +154,8 @@ export function slackMessage(message) {
   };
 }
 
-export async function send(message, slackUrl) {
-  const { host, pathname } = new URL(slackUrl);
+export async function send(message, webhook) {
+  const { host, pathname } = new URL(webhook);
   const options = {
     hostname: host,
     path: pathname,
@@ -115,6 +166,11 @@ export async function send(message, slackUrl) {
   };
 
   try {
+    console.log(
+      `[Slack 발송 시도] message=${JSON.stringify(
+        message,
+      )}, webhook=${webhook}`,
+    );
     await request(options, message);
   } catch (e) {
     console.error(`[Slack 발송 실패] message=${message}`, e);

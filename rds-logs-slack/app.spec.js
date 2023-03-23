@@ -1,5 +1,11 @@
 import { Message } from './app';
-import { data, event_error, event_slow } from './data';
+import {
+  data,
+  event_ddl,
+  event_error,
+  event_explain,
+  event_slow,
+} from './data';
 
 describe('rds-logs-slack', () => {
   it('decode', () => {
@@ -11,7 +17,7 @@ describe('rds-logs-slack', () => {
   it('duration이 초로 변환된다', () => {
     const result = new Message(event_slow, '').queryTime;
 
-    expect(result).toBe('1.003');
+    expect(result).toBe('3.003');
   });
 
   it('IP가 추출된다', () => {
@@ -44,5 +50,47 @@ describe('rds-logs-slack', () => {
     expect(result).toBe(
       'update or delete on table "users" violates foreign key constraint "carts_user_id_foreign" on table "carts"',
     );
+  });
+
+  it('error type이 추출된다', () => {
+    const result = new Message(event_error, '').type;
+
+    expect(result).toBe('ERROR');
+  });
+
+  it('slow type이 추출된다', () => {
+    const result = new Message(event_slow, '').type;
+
+    expect(result).toBe('SLOW');
+  });
+
+  it('ddl type이 추출된다', () => {
+    const result = new Message(event_ddl, '').type;
+
+    expect(result).toBe('DDL');
+  });
+
+  it('3초이상이면 전송 가능하다', () => {
+    const result = new Message(event_slow, '').isSendable;
+
+    expect(result).toBe(true);
+  });
+
+  it('ERROR이면 전송 가능하다', () => {
+    const result = new Message(event_error, '').isSendable;
+
+    expect(result).toBe(true);
+  });
+
+  it('DDL이면 전송 가능하다', () => {
+    const result = new Message(event_ddl, '').isSendable;
+
+    expect(result).toBe(true);
+  });
+
+  it('explain이면 전송하지 않는다', () => {
+    const result = new Message(event_explain, '').isSendable;
+
+    expect(result).toBe(false);
   });
 });

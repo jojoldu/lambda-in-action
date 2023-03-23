@@ -43,11 +43,17 @@ export async function sendMessages(logEvents, logStream) {
 
   console.log(`messages count=${messages.length}`);
 
-  for await (const message of messages) {
-    await send(slackMessage(message), message.webhook);
-  }
+  const results = await Promise.allSettled(
+    messages.map(async (message) => {
+      await send(slackMessage(message), message.webhook);
+    }),
+  );
 
-  return messages.length;
+  results
+    .filter((result) => result.status === 'rejected')
+    .map((fail) => console.log(`sendMessage 실패: ${fail.value}`));
+
+  return results.filter((result) => result.status === 'fulfilled').length;
 }
 
 const SERVICE_TYPE = {
@@ -139,14 +145,7 @@ export class KstTime {
 /** @param message {Message} */
 export function slackMessage(message) {
   const title = `[${message.type} 쿼리]`;
-  const payload = `언제: ${message.currentTime}
-  서비스:${message.service}
-  로그위치:${message.logLocation}
-  사용자: ${message.user}
-  사용자IP: ${message.userIp}
-  pid: ${message.pid}
-  수행시간: ${message.queryTime} 초
-  쿼리/메세지: ${message.query}`;
+  const payload = `언제: ${message.currentTime}\n서비스:${message.service}\n로그위치:${message.logLocation}\n사용자: ${message.user}\n사용자IP: ${message.userIp}\npid: ${message.pid}\n수행시간: ${message.queryTime} 초\n쿼리/메세지: ${message.query}`;
 
   const color = message.type === 'DDL' ? '#2eb886' : '#FF0000';
 
@@ -154,7 +153,7 @@ export function slackMessage(message) {
     attachments: [
       {
         color: color,
-        title: `${title}`,
+        title: title,
         fields: [
           {
             value: payload,
@@ -183,6 +182,7 @@ export async function send(message, webhook) {
       )}, webhook=${webhook}`,
     );
     await request(options, message);
+    console.log(`[Slack 발송 성공] message=${JSON.stringify(message)}`);
   } catch (e) {
     console.log(
       `[Slack 발송 실패] message=${JSON.stringify(

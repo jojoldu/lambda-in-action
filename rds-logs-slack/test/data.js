@@ -1,13 +1,13 @@
 /* eslint-disable */
 export const awslogs =
-  '{ "awslogs": { "data": "H4sIAAAAAAAAAM1Ty27bMBD8FUInB7BkPiRKIuqiRu344iBo7J4SI2CkrStAr5JUlMDQLb/Q/+iP5R+6SuFDi16KoGgvBHY4OzvDBY9eBdbqA+weW/CUt1zsFrcXq+12sV55U6/pazAIpwmTNIzChAqBcNkc1qbpWryZ6d7OTG5nWdlZB2ama+dXuvYR83O4909421h3MGC/lD8Ets6ArlDh1wYeUGTY7s5mpmhd0dTnRYkK1lPX3tVyS5bLzZQsLzbk+evT89M3b/+it7qH2o2co1fkKCviMBI8YjFliRAho7EMY855wpM0TSMZC4GpGFYyiiWNqeBSJnyc7Qp8FKcrzMdknIaSJSmjlE5Pj4XynHLhU+FzTmikGFOCkY+79wonBGkasDQMOJeTSMpUnqmi/lTqu3cYlalrLtDEXm0u14qQvDN6zKgIp5QHcUpJZQmBB8g6B+RNV9e6gvytIhZKyBxpD7e2BGgn/AytwoMzOnOQnxdQ5hj/6PXsJ3tI6jkiJ5djLbD+c7NjZ4idr7I8DNPXLYj94wXFyUvattS1uqlv3IcOzCPZ4SJ+l3dkXIHtSkfIJMMvMKcBpUGAJyOm6e2ckb7I3ed5+L+s8y8GHIb98B0x/beFcgQAAA==" } } ';
+  '{ "awslogs": { "data": "H4sIAAAAAAAAAM1V3W7TMBh9FStXndSk/o3jiCIq2vVm08RarrZqShNTIuUP21k2VX0TbngKeCZ4Cb4OVQjUCWg1jZso3/Hn43O+4yhrr9TWJis9v2+0F3vj0Xx0cz6ZzUbTidf36q7SBmAVkRBzwSPMGMBFvZqaum1gZZB0dmAyO0iL1jptBknl/DKpfMD8TN/6O7yprVsZbT8UPwhmzuikBIbfN9AAQ4dtlzY1eePyujrNC2CwXnzlXY5naDw+66Px+Rn69unj189fvMUD3+RWV27bs/byDGiZ5EIwSqWkmCmlIoZZqJjgSqiQhkQyGcE7UxxqHhHOueSEUDjb5TAUl5Tgj4RSCcFlSDDG/d2wgJ5iynzMfMoQDmOhYkrQ2/nrmFIaKBUQxQNKw57AIuQncV69K5LlK7BK4ivFmVzEZxfTGKGsNcnWYozgABHgUKLSIqTvdNo6jV60VZWUOnsZI6sLnTrUrG5soXXTIyegVN85k6ROZ6e5LjJwv/Y68os6aOooIDuR25pB/c9atxs5bDxK8WbTPy4e9rzxCPFgtimSKr6urt2bVpt7NIcY9tnddlxq2xYOoV4K93+IA4yDAJ4EmbqzQ4K6PHPvh/w/CfMJ/e2JHvRwLDkTGMRzIimELhWshoRSEsmIEiI4oTxSmBD+SPT0j9HTQ6Lfc6EzUzfIJctCIwcyDomMHh3ZX+g6etTi2Uedws8BkJ+menmG8sod9J08ydAfV7jZLDbfAS5PnopYBwAA" } } ';
 export const event_slow = {
   "timestamp": 1679485640000,
   "message": "2023-03-22 11:47:20 UTC:222.99.194.226(49157):inflab@ant1:[7699]:LOG:  duration: 3003.040 ms  execute <unnamed>: select pg_sleep(1)",
 };
 export const event_ddl = {
   "timestamp": 1679485640000,
-  "message": "2023-03-22 11:47:20 UTC:222.99.194.226(49157):inflab@ant1:[7699]:LOG:  execute <unnamed>: drop table test",
+  "message": "2023-03-23 06:08:23 UTC:222.99.194.226(50564):inflab@ant1:[9437]:LOG:  execute <unnamed>: create table test(id int)",
 };
 
 export const event_explain = {
@@ -25,7 +25,7 @@ export const data = {
     {
       "id": "37453781322231130668491299941284769867471356897593655300",
       "timestamp": 1679485640000,
-      "message": "2023-03-22 11:47:20 UTC:222.99.194.226(49157):inflab@ant1:[7699]:LOG:  duration: 3003.029 ms  plan:\n\tQuery Text: select pg_sleep(1)\n\tResult  (cost=0.00..0.01 rows=1 width=4)",
+      "message": "2023-03-22 11:47:20 UTC:222.99.194.226(49157):inflab@ant1:[7699]:LOG:  duration: 3003.040 ms  execute <unnamed>: select pg_sleep(1)",
       "extractedFields": {
         "w1": "2023-03-22",
         "w2": "11:47:20",
@@ -42,6 +42,17 @@ export const data = {
         "w2": "11:47:21",
         "w3": "UTC:222.99.194.226(49157):inflab@ant1:[7699]:LOG:",
         "w4": "execute <unnamed>: create table test(id int)"
+      }
+    },
+    {
+      "id": "37453781344531875867021923082820488140119718403574071302",
+      "timestamp": 1679485641000,
+      "message": "2023-03-22 11:47:21 UTC:222.99.194.226(49157):inflab@ant1:[7699]:LOG:  execute <unnamed>: drop table",
+      "extractedFields": {
+        "w1": "2023-03-22",
+        "w2": "11:47:21",
+        "w3": "UTC:222.99.194.226(49157):inflab@ant1:[7699]:LOG:",
+        "w4": "execute <unnamed>: drop table"
       }
     }
   ]

@@ -1,4 +1,5 @@
 module.exports = {
+  setupFiles: ['<rootDir>/.jest/setEnvVars.js'],
   coverageReporters: ['lcov'],
   moduleFileExtensions: ['js', 'json', 'ts'],
   rootDir: '.',

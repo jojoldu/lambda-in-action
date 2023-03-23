@@ -1,4 +1,3 @@
-import { Message } from './app';
 import {
   data,
   event_ddl,
@@ -6,6 +5,7 @@ import {
   event_explain,
   event_slow,
 } from './data';
+import { Message, send, slackMessage } from '../app';
 
 describe('rds-logs-slack', () => {
   it('decode', () => {

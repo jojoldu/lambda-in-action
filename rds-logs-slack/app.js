@@ -1,7 +1,7 @@
 import https from 'https';
 import zlib from 'zlib';
 
-const WEB_HOOKS = {
+export const WEB_HOOKS = {
   DDL: process.env.DDL,
   SLOW: {
     inflearn: process.env.INFLEARN_SLOW,
@@ -21,24 +21,34 @@ export const handler = async (event, context) => {
       context.fail(e);
     }
 
+    console.log('EVENT: \n' + JSON.stringify(event, null, 2));
     const { logEvents, logStream } = JSON.parse(result);
+    console.log(`logEvents: \n${JSON.stringify(logEvents)}`);
     console.log(`logEvents count=${logEvents.length}`);
 
-    const messages = logEvents
-      ?.map((event) => new Message(event, logStream))
-      .filter((message) => message.isSendable);
-
-    console.log(`messages count=${messages.length}`);
-
-    await Promise.all(
-      messages.map(
-        async (message) => await send(slackMessage(message), message.webhook),
-      ),
-    ).catch((error) => {
-      console.error('slack message fail:', error);
-    });
+    try {
+      const successCount = await sendMessages(logEvents, logStream);
+      console.log(`[Response] 전체 ${successCount} 건 전송 완료`);
+    } catch (e) {
+      console.log('slack message fail:', e);
+      context.fail(e);
+    }
   });
 };
+
+export async function sendMessages(logEvents, logStream) {
+  const messages = logEvents
+    ?.map((event) => new Message(event, logStream))
+    .filter((message) => message.isSendable);
+
+  console.log(`messages count=${messages.length}`);
+
+  for await (const message of messages) {
+    await send(slackMessage(message), message.webhook);
+  }
+
+  return messages.length;
+}
 
 const SERVICE_TYPE = {
   INFLEARN: 'INFLEARN',
@@ -53,7 +63,7 @@ export class Message {
     this.user = message.match(/:\w+@\w+:/)[0].slice(1, -1);
     this.pid = message.match(/:\[\d+]/)[0].slice(2, -1);
     this.queryTime = this.getQueryTime(message);
-    this.query = message.match(/(?:ERROR|LOG):\s+(?:.*:\s+)?(.+)/)[1];
+    this.query = message.match(/(?:ERROR|LOG|STATEMENT):\s+(?:.*:\s+)?(.+)/)[1];
   }
 
   getQueryTime(message) {
@@ -129,19 +139,21 @@ export class KstTime {
 /** @param message {Message} */
 export function slackMessage(message) {
   const title = `[${message.type} 쿼리]`;
-  const payload = `언제: ${message.currentTime}\n
-  Service:${message.service}\n
-  Log Location:${message.logLocation}\n
-  User: ${message.user}\n
-  UserIP: ${message.userIp}\n
-  pid: ${message.pid}\n
-  QueryTime: ${message.queryTime} 초\n
-  Query: ${message.query}`;
+  const payload = `언제: ${message.currentTime}
+  서비스:${message.service}
+  로그위치:${message.logLocation}
+  사용자: ${message.user}
+  사용자IP: ${message.userIp}
+  pid: ${message.pid}
+  수행시간: ${message.queryTime} 초
+  쿼리/메세지: ${message.query}`;
+
+  const color = message.type === 'DDL' ? '#2eb886' : '#FF0000';
 
   return {
     attachments: [
       {
-        color: '#2eb886',
+        color: color,
         title: `${title}`,
         fields: [
           {
@@ -155,17 +167,16 @@ export function slackMessage(message) {
 }
 
 export async function send(message, webhook) {
-  const { host, pathname } = new URL(webhook);
-  const options = {
-    hostname: host,
-    path: pathname,
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  };
-
   try {
+    const { host, pathname } = new URL(webhook);
+    const options = {
+      hostname: host,
+      path: pathname,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    };
     console.log(
       `[Slack 발송 시도] message=${JSON.stringify(
         message,
@@ -173,7 +184,12 @@ export async function send(message, webhook) {
     );
     await request(options, message);
   } catch (e) {
-    console.error(`[Slack 발송 실패] message=${message}`, e);
+    console.log(
+      `[Slack 발송 실패] message=${JSON.stringify(
+        message,
+      )}, webhook=${webhook}`,
+      e,
+    );
     throw e;
   }
 }
@@ -182,19 +198,23 @@ export async function request(options, data) {
   return new Promise((resolve, reject) => {
     const req = https.request(options, (res) => {
       res.setEncoding('utf8');
-      let responseBody = '';
+      let rawData = '';
 
       res.on('data', (chunk) => {
-        responseBody += chunk;
+        rawData += chunk;
       });
 
       res.on('end', () => {
-        resolve(responseBody);
+        try {
+          resolve(rawData);
+        } catch (err) {
+          console.log(`res.on(end) Error`, err);
+          reject(err);
+        }
       });
     });
 
     req.on('error', (err) => {
-      console.error(err);
       reject(err);
     });
 

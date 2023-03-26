@@ -91,7 +91,8 @@ export class Message {
 
     return match[1]
       .replace('execute <unnamed>: ', '')
-      .replace(/^duration:\s+\d+\.\d+\s+ms\s+/, '');
+      .replace(/^duration:\s+\d+\.\d+\s+ms\s+/, '')
+      .replace('statement: ', '');
   }
 
   getPid(message) {

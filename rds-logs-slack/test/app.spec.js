@@ -44,12 +44,29 @@ describe('rds-logs-slack', () => {
     expect(result).toBe('select pg_sleep(1)');
   });
 
-  it('error Query가 추출된다', () => {
-    const result = new Message(event_error, '').query;
+  describe('Error Query', () => {
+    it('dot(.)이 있는 쿼리', () => {
+      const message =
+        '2023-03-25 13:58:16 UTC:10.0.0.43(59886):inflearn_ro@antman:[27123]:ERROR:  invalid input syntax for type integer: "3010.17"';
 
-    expect(result).toBe(
-      'update or delete on table "users" violates foreign key constraint "carts_user_id_foreign" on table "carts"',
-    );
+      const result = new Message(
+        {
+          message,
+          timestamp: 1679485640000,
+        },
+        '',
+      ).query;
+
+      expect(result).toBe('invalid input syntax for type integer: "3010.17"');
+    });
+
+    it('일반 쿼리', () => {
+      const result = new Message(event_error, '').query;
+
+      expect(result).toBe(
+        'update or delete on table "users" violates foreign key constraint "carts_user_id_foreign" on table "carts"',
+      );
+    });
   });
 
   it('error type이 추출된다', () => {

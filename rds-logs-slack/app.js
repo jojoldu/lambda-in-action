@@ -83,9 +83,15 @@ export class Message {
   }
 
   getQuery(message) {
-    const match = message.match(/(?:ERROR|LOG|STATEMENT):\s+(?:.*:\s+)?(.+)/);
+    const match = message.match(/(?:ERROR|LOG|STATEMENT):\s+(.*)$/);
 
-    return match ? match[1] : '';
+    if (!match) {
+      return '';
+    }
+
+    return match[1]
+      .replace('execute <unnamed>: ', '')
+      .replace(/^duration:\s+\d+\.\d+\s+ms\s+/, '');
   }
 
   getPid(message) {
@@ -140,7 +146,7 @@ export class Message {
 
   get isSendable() {
     if (
-      this.query.includes('Query Text:') ||
+      this._message.includes('Query Text:') ||
       this.user.includes('datadog') ||
       !this.user
     ) {

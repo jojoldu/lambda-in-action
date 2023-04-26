@@ -70,6 +70,22 @@ describe('rds-logs-slack', () => {
         'SELECT "terms".*, "terms"."course_id" FROM "_courses_terms" AS "terms" WHERE "course_id" IN ($1) order by "_seq", "seq", "id"',
       );
     });
+
+    it('누락된 쿼리', () => {
+      const message =
+        "2023-04-26 08:47:23 UTC:222.99.194.226(60759):dev_ro@antman:[6162]:LOG:  00000: duration: 11468.120 ms  execute <unnamed>: SELECT * from completes as com  inner join users as u on u.email = 'abhidhamma91@gmail.com'  inner join units as un on un.course_id IN (select vouchers.course_id                                             from vouchers                                             where user_id = u.id)  where completed_at > '2022-01-01'  order by completed_at";
+      const result = new Message(
+        {
+          message,
+          timestamp: 1679485640000,
+        },
+        '',
+      ).query;
+
+      expect(result).toBe(
+        "SELECT * from completes as com  inner join users as u on u.email = 'abhidhamma91@gmail.com'  inner join units as un on un.course_id IN (select vouchers.course_id                                             from vouchers                                             where user_id = u.id)  where completed_at > '2022-01-01'  order by completed_at",
+      );
+    });
   });
 
   it('slow Query가 추출된다', () => {

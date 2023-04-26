@@ -76,9 +76,11 @@ export class Message {
     }
 
     return match[1]
+      .replace('00000: ', '')
       .replace('execute <unnamed>: ', '')
-      .replace(/^duration:\s+\d+\.\d+\s+ms\s+/, '')
-      .replace('statement: ', '');
+      .replace('parse <unnamed>: ', '')
+      .replace('statement: ', '')
+      .replace(/^duration:\s+\d+\.\d+\s+ms\s+/, '');
   }
 
   getPid(message) {

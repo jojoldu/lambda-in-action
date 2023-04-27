@@ -38,6 +38,25 @@ describe('rds-logs-slack', () => {
     expect(result).toBe('inflab@ant1');
   });
 
+  describe('DDL', () => {
+    it('alter table', () => {
+      const message =
+        '2023-04-25 05:58:55 UTC:222.99.194.226(51891):inflab@antman:[7061]:LOG:  00000: execute <unnamed>: alter table "offline_course"    add column "inquiry_email" varchar(1000) null,    add column "inquiry_link" varchar(1000) null';
+
+      const result = new Message(
+        {
+          message,
+          timestamp: 1679485640000,
+        },
+        '',
+      ).query;
+
+      expect(result).toBe(
+        'alter table "offline_course"    add column "inquiry_email" varchar(1000) null,    add column "inquiry_link" varchar(1000) null',
+      );
+    });
+  });
+
   describe('Slow Query', () => {
     it('update 쿼리', () => {
       const message =

@@ -4,7 +4,12 @@ export function main(event) {
   const param = event.queryStringParameters.videoId;
 
   if (!param) {
-    return getVideos();
+    return {
+      statusCode: 200,
+      body: JSON.stringify({
+        videos: data,
+      }),
+    };
   }
 
   if (isNaN(param) || !Number.isInteger(parseFloat(param))) {
@@ -30,15 +35,6 @@ export function main(event) {
     statusCode: 200,
     body: JSON.stringify({
       video: data[videoId - 1],
-    }),
-  };
-}
-
-function getVideos() {
-  return {
-    statusCode: 200,
-    body: JSON.stringify({
-      videos: data,
     }),
   };
 }

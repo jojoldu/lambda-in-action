@@ -1,7 +1,9 @@
 export const data = getData();
 
 export function main(event) {
-  const param = event.queryStringParameters.videoId;
+  console.log(`event.queryStringParameters = ${JSON.stringify(event.queryStringParameters)}`);
+
+  const param = event.queryStringParameters?.videoId;
 
   if (!param) {
     return {

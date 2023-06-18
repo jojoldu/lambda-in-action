@@ -1,4 +1,4 @@
 node_modules
 .idea
-setEnvVars.js
+.jest/setEnvVars.js
 .jest

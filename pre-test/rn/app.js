@@ -1,47 +1,78 @@
-export const data = getData();
+export const data = getList();
 
 export function main(event) {
-  console.log(`event.queryStringParameters = ${JSON.stringify(event.queryStringParameters)}`);
+  const queryStringParameters = event.queryStringParameters;
 
-  const param = event.queryStringParameters?.videoId;
-
-  if (!param) {
+  if (!queryStringParameters) {
     return {
       statusCode: 200,
       body: JSON.stringify({
-        videos: data,
+        videos: paginate(data, 10, 1),
       }),
     };
   }
+
+  if (
+    queryStringParameters.videoId &&
+    queryStringParameters.pageNo &&
+    queryStringParameters.pageSize
+  ) {
+    return {
+      statusCode: 400,
+      body: JSON.stringify({
+        message: 'videoId, pageNo, pageSize는 동시에 사용할 수 없습니다.',
+      }),
+    };
+  }
+
+  if (queryStringParameters.pageNo && queryStringParameters.pageSize) {
+    return {
+      statusCode: 200,
+      body: JSON.stringify({
+        videos: paginate(
+          data,
+          Number(queryStringParameters.pageSize),
+          Number(queryStringParameters.pageNo),
+        ),
+      }),
+    };
+  }
+
+  return getOne(queryStringParameters);
+}
+
+function getOne(queryStringParameters) {
+  const param = queryStringParameters.videoId;
 
   if (isNaN(param) || !Number.isInteger(parseFloat(param))) {
     return {
       statusCode: 400,
       body: JSON.stringify({
-        message: 'id는 정만 가능합니다.',
+        message: 'id는 정수만 가능합니다.',
       }),
     };
   }
-  const videoId = Number(event.queryStringParameters.videoId);
 
-  if (videoId < 1 || videoId > 100) {
+  const videoId = Number(queryStringParameters.videoId);
+
+  try {
     return {
-      statusCode: 404,
+      statusCode: 200,
       body: JSON.stringify({
-        message: '존재하지 않는 영상입니다',
+        video: data[videoId - 1],
+      }),
+    };
+  } catch (e) {
+    return {
+      statusCode: 200,
+      body: JSON.stringify({
+        video: {},
       }),
     };
   }
-
-  return {
-    statusCode: 200,
-    body: JSON.stringify({
-      video: data[videoId - 1],
-    }),
-  };
 }
 
-export function getData() {
+export function getList() {
   return getUrls().map((url, index) => ({
     id: index + 1,
     title: `제목 ${index + 1}`,
@@ -83,6 +114,21 @@ function getRandomDate() {
   return new Date(
     start.getTime() + Math.random() * (end.getTime() - start.getTime()),
   );
+}
+
+function paginate(array, pageSize = 10, pageNo = 1) {
+  const pageIndex = pageNo - 1;
+
+  try {
+    return array.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize);
+  } catch (e) {
+    console.log(
+      `paginate 에서 에러 발생, pageSize=${pageSize}, pageNo=${pageNo}`,
+      e,
+    );
+
+    return [];
+  }
 }
 
 function getUrls() {

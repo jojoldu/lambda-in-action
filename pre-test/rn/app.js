@@ -74,7 +74,7 @@ function getOne(queryStringParameters) {
 
 export function getList() {
   return getUrls().map((url, index) => ({
-    id: index + 1,
+    id: 100 - index,
     title: `제목 ${index + 1}`,
     description: `영상 소개 ${index + 1}`,
     uploader: `업로더 ${index + 1}`,

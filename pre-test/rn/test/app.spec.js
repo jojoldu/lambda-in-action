@@ -22,7 +22,7 @@ describe('React Native App', () => {
 
       expect(result.statusCode).toBe(200);
       expect(result.body).toContain('video');
-      expect(JSON.parse(result.body).video.id).toBe(1);
+      expect(JSON.parse(result.body).video.id).toBe(100);
     });
 
     it('videoId가 숫자가 아니면 400을 반환한다', () => {
@@ -47,7 +47,7 @@ describe('React Native App', () => {
       expect(result.statusCode).toBe(200);
       const videos = JSON.parse(result.body).videos;
       expect(videos).toHaveLength(10);
-      expect(videos[0].id).toBe(11);
+      expect(videos[0].id).toBe(90);
     });
   });
 

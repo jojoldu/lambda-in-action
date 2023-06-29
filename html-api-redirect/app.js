@@ -6,7 +6,7 @@ const https = require('https');
  * tutorial. Visit the function URL to see it and learn how
  * to build with lambda.
  */
-export const handler = async (event, context) => {
+exports.handler = async (event) => {
   console.log(`event: ${JSON.stringify(event)}`);
 
   const id = event.queryStringParameters?.id;
@@ -66,7 +66,9 @@ export async function getSessionDescription(domain, id) {
       'Content-Type': 'application/json',
     },
   };
-  const response = await request(options, {});
+  // const response = await request(options, {});
+  const response =
+    '{"data":{"title":"Kopring(Kotlin + Spring) 프로젝트 투입 1주일 전 (주니어 개발자의 Kotlin 도입 이야기)", "body":"body 테스트"}}';
   const { data } = JSON.parse(response);
 
   return {

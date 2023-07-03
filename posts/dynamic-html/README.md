@@ -14,3 +14,11 @@ index.html과 index.js가 생성된다.
 
 이대로 진행해도 무방하나, node 버전을 업데이트하여 좀 더 최신의 코드로 작업을 진행한다.
 
+
+![2](./images/2.png)
+
+![3](./images/3.png)
+
+![4](./images/4.png)
+
+![5](./images/5.png)

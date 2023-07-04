@@ -22,3 +22,5 @@ index.html과 index.js가 생성된다.
 ![4](./images/4.png)
 
 ![5](./images/5.png)
+
+js로 

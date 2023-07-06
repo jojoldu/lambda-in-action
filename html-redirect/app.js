@@ -1,18 +1,23 @@
-const fs = require('fs');
+import fs from 'fs';
 
-const html = fs.readFileSync('index.html', { encoding: 'utf-8' });
+const html = fs.readFileSync('index.html', { encoding: 'utf8' });
 
-exports.handler = async (event) => {
+export const handler = async (event, context) => {
   console.log(`event: ${JSON.stringify(event)}`);
 
+  const id = event.queryStringParameters?.id;
   const userName = event.queryStringParameters?.name;
-  const body = html.replace('{userName}', userName || '');
+  const body = html
+    .replace(/{userName}/g, userName || '')
+    .replace(/{id}/g, id || '');
 
-  return {
+  const response = {
     statusCode: 200,
     headers: {
-      'Context-Type': 'text/html',
+      'Content-Type': 'text/html',
     },
-    body: body,
+    body,
   };
+
+  return response;
 };

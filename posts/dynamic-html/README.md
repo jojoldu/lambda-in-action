@@ -47,8 +47,18 @@ ESM을 쓰기 위해 `index.js` 파일의 확장자를 `.mjs`로 교체해준다
 
 ![5](./images/5.png)
 
+이제 원하는 대로 렌더링 결과물을 내려줄 수 있도록 코드 작업을 진행한다.
 
 ### 코드
+
+코드 작업에서는 크게 2가지 요구조건을 달성한다.
+
+- Request Parameter 에 맞춰 meta tag가 Server Side에서 동적으로 생성된다.
+- 렌더링된 HTML 페이지 접근시 원하는 다른 페이지로 리다이렉트 한다.
+  - 여기서는 `https://inflearn.com?id={id}` 로 리다이렉트 한다.
+- 렌더링 되는 페이지에도 파라미터를 전달한다.
+
+실제 로직을 수행할 `.mjs` 파일의 코드는 다음과 같다.
 
 **index.mjs**
 
@@ -76,6 +86,12 @@ export const handler = async (event, context) => {
 };
 ```
 
+- `event.queryStringParameters`가 Request Parameter 객체이므로, 여기서 원하는 파라미터값을 가져온다.
+- index.html을 가져와서 (`fs.readFile`) 전달받은 파라미터로 내용물을 교체 (`html.replace`) 한다. 
+- HTML로 응답 (`'Content-Type': 'text/html'`) 을 내려준다.
+
+다음은 실제 서버에서 렌더링될 HTML이다.  
+
 **index.html**
 
 ```html
@@ -96,11 +112,31 @@ export const handler = async (event, context) => {
 </html>
 ```
 
+- 각종 meta tag들을 `.mjs` 파일과 매칭될 수 있는 변수로 등록한다.
+  - `{userName}`, `{id}` 등등 
+- 원하는 페이지로 리다이렉트 되도록 `script`를 작성한다.
+
+이외에도 필요한 여러가지 로직을 `index.mjs`, `index.html` 등에 추가할 수 있다.  
+  
+작성이 완료되었다면 "Deploy" 버튼을 클릭하여 배포하고, Lambda 페이지 우측 상단에 있는 "함수 URL" 를 복사하여 필요한 파라미터와 함께 카톡으로 전달해본다.
 
 ![6](./images/6.png)
 
-## 추가
+여기서는 파라미터로 `id` 와 `name` 을 사용하였는데, 이들과 함께 URL을 만들어서 전달해보면, 다음과 같이 각종 메타 태그가 잘 생성된 것을 알 수 있으며
+
+![7](./images/7.png)
+
+해당 링크 클릭시 원하던 페이지로 리다이렉트까지 되는 것을 확인할 수 있다.
+
+![8](./images/8.png)
+
+### 추가
 
 이렇게 만든 Lambda Redirect 서비스에 Custom Domain을 붙이는 것도 `Route53 + CloudFront`를 활용하면 가능하다.  
 
 - [Configuring a custom domain for AWS Lambda Function URLs](https://medium.com/@walid.karray/configuring-a-custom-domain-for-aws-lambda-function-url-with-serverless-framework-c0d78abdc253)
+
+## 마무리
+
+AWS Lamda가 단순히 API의 대체제 역할만 하는 것은 아니다.  
+관리를 위임한 서버 환경이라고 생각해보면 그동안 애플리케이션 서버가 해주던 많은 역할들을 손쉽고 + 신경쓸게 적은 환경을 구축할 수 있다.

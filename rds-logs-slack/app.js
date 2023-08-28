@@ -71,6 +71,16 @@ export async function sendMessages(logEvents, logStream) {
 }
 
 export class Message {
+  static extractQuery(message) {
+    const messages = message.split(/:(ERROR|LOG|STATEMENT):\s+/);
+
+    if (!messages || messages.length <= 2) {
+      return '';
+    }
+
+    return messages[2];
+  }
+
   constructor({ message, timestamp }, logStream) {
     this._message = message;
     this.currentTime = new KstTime(timestamp).time;
@@ -83,13 +93,13 @@ export class Message {
   }
 
   getQuery(message) {
-    const match = message.match(/(?:ERROR|LOG|STATEMENT):\s+(.*)$/);
+    const query = Message.extractQuery(message);
 
-    if (!match) {
+    if (!query) {
       return '';
     }
 
-    return match[1]
+    return query
       .replace('00000: ', '')
       .replace('execute <unnamed>: ', '')
       .replace('parse <unnamed>: ', '')

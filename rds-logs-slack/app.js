@@ -147,9 +147,9 @@ export class Message {
 
   get type() {
     if (
-      this.query.includes('create table') ||
-      this.query.includes('drop table') ||
-      this.query.includes('alter table')
+      ['create table', 'drop table', 'alter table'].some((command) =>
+        this.query.toLowerCase().startsWith(command),
+      )
     ) {
       return 'DDL';
     }

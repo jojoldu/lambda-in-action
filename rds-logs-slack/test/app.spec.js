@@ -113,6 +113,22 @@ describe('rds-logs-slack', () => {
       );
     });
 
+    it('데이터독 주석 메세지 제거', () => {
+      const message =
+        '2023-04-26 05:59:14 UTC:10.0.1.58(56344):inflearn_ro@antman:[4632]:LOG:  00000: duration: 9517.967 ms  /dddbs=\'rallit-admin-backend-postgres\',dde=\'prod\',ddps=\'rallit-admin-backend\',ddpv=\'undefined\',traceparent=\'00-65e675980000000013f83cd7d635ea6c-0af4b6ee4d1d53ad-00\'/ SELECT COUNT(1) AS "cnt" FROM "job_seeker" "jobSeeker" WHERE "jobSeeker"."resume_created_at" >= $1 and "jobSeeker"."resume_created_at" < $2';
+      const result = new Message(
+        {
+          message,
+          timestamp: 1679485640000,
+        },
+        '',
+      ).query;
+
+      expect(result).toBe(
+        'SELECT COUNT(1) AS "cnt" FROM "job_seeker" "jobSeeker" WHERE "jobSeeker"."resume_created_at" >= $1 and "jobSeeker"."resume_created_at" < $2',
+      );
+    });
+
     it('누락된 쿼리', () => {
       const message =
         "2023-04-26 08:47:23 UTC:222.99.194.226(60759):dev_ro@antman:[6162]:LOG:  00000: duration: 11468.120 ms  execute <unnamed>: SELECT * from completes as com  inner join users as u on u.email = 'abhidhamma91@gmail.com'  inner join units as un on un.course_id IN (select vouchers.course_id                                             from vouchers                                             where user_id = u.id)  where completed_at > '2022-01-01'  order by completed_at";

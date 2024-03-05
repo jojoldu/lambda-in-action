@@ -104,7 +104,9 @@ export class Message {
       .replace('execute <unnamed>: ', '')
       .replace('parse <unnamed>: ', '')
       .replace('statement: ', '')
-      .replace(/^duration:\s+\d+\.\d+\s+ms\s+/, '');
+      .replace(/^duration:\s+\d+\.\d+\s+ms\s+/, '')
+      .replace(/\/dddbs=.*?'\//, '')
+      .trim();
   }
 
   getPid(message) {

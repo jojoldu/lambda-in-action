@@ -115,7 +115,23 @@ describe('rds-logs-slack', () => {
 
     it('데이터독 주석 메세지 제거', () => {
       const message =
-        '2023-04-26 05:59:14 UTC:10.0.1.58(56344):inflearn_ro@antman:[4632]:LOG:  00000: duration: 9517.967 ms  /dddbs=\'rallit-admin-backend-postgres\',dde=\'prod\',ddps=\'rallit-admin-backend\',ddpv=\'undefined\',traceparent=\'00-65e675980000000013f83cd7d635ea6c-0af4b6ee4d1d53ad-00\'/ SELECT COUNT(1) AS "cnt" FROM "job_seeker" "jobSeeker" WHERE "jobSeeker"."resume_created_at" >= $1 and "jobSeeker"."resume_created_at" < $2';
+        '2024-03-11 11:49:03 UTC:10.0.0.94(13134):inflearn_ro@antman:[14179]:LOG:  00000: duration: 3603.681 ms  execute <unnamed>: /*dddbs=\'inflearn-antman-postgres\',dde=\'prod\',ddps=\'inflearn-antman\',ddpv=\'5.81.20\',traceparent=\'00-65eeefab0000000078f48075d0702570-1e69cfebcb7228d9-00\'*/ SELECT COUNT(1) AS "cnt" FROM "job_seeker" "jobSeeker" WHERE "jobSeeker"."resume_created_at" >= $1 and "jobSeeker"."resume_created_at" < $2';
+      const result = new Message(
+        {
+          message,
+          timestamp: 1679485640000,
+        },
+        '',
+      ).query;
+
+      expect(result).toBe(
+        'SELECT COUNT(1) AS "cnt" FROM "job_seeker" "jobSeeker" WHERE "jobSeeker"."resume_created_at" >= $1 and "jobSeeker"."resume_created_at" < $2',
+      );
+    });
+
+    it('데이터독 랠릿 주석 메세지 제거', () => {
+      const message =
+        '2024-03-11 01:30:01 UTC:10.1.18.184(37714):rallit_rw@rallit:[1173]:LOG:  00000: duration: 1237.994 ms  execute <unnamed>: /*dddbs=\'rallit-admin-backend-postgres\',dde=\'prod\',ddps=\'rallit-admin-backend\',ddpv=\'undefined\',traceparent=\'00-65ee5e98000000004f0bdfaeac9d44e7-7b127d9024ed5c9f-00\'*/ SELECT COUNT(1) AS "cnt" FROM "job_seeker" "jobSeeker" WHERE "jobSeeker"."resume_created_at" >= $1 and "jobSeeker"."resume_created_at" < $2';
       const result = new Message(
         {
           message,

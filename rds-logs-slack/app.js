@@ -105,7 +105,7 @@ export class Message {
       .replace('parse <unnamed>: ', '')
       .replace('statement: ', '')
       .replace(/^duration:\s+\d+\.\d+\s+ms\s+/, '')
-      .replace(/\/dddbs=.*?'\//, '')
+      .replace(/\/\*dddbs.*?\*\//s, '')
       .trim();
   }
 

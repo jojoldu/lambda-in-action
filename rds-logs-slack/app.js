@@ -101,7 +101,7 @@ export class Message {
 
     return query
       .replace('00000: ', '')
-      .replace('execute <unnamed>: ', '')
+      .replace(/execute S_\d+: |execute <unnamed>(\/C_\d+)?: /g, '')
       .replace('parse <unnamed>: ', '')
       .replace('statement: ', '')
       .replace(/^duration:\s+\d+\.\d+\s+ms\s+/, '')
